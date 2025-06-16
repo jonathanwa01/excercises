@@ -1,11 +1,13 @@
 import logging
-from pathlib import Path
 import random
-from typing import Any, Callable, Iterable, List, Tuple
+from collections.abc import Callable, Iterable
+from pathlib import Path
+from typing import Any
+
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import bisect
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 # logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -13,11 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 def approximate_attractor(
-    ifs: List[Callable[[Tuple[float, ...]], Tuple[float, ...]]], points: List[Tuple[float, ...]], number_iterations: int
-) -> List[Tuple[float, ...]]:
+    ifs: list[Callable[[tuple[float, ...]], tuple[float, ...]]],
+    points: list[tuple[float, ...]],
+    number_iterations: int,
+) -> list[tuple[float, ...]]:
     """
-    Approximates the attractor of an Iterated Function System (IFS) by recursively applying
-    all combinations of functions for a fixed number of iterations.
+    Approximates the attractor of an Iterated Function System.
+
+    It does so by recursively applying all combinations of functions for a fixed number of iterations.
 
     Args:
         ifs (List[Retraction]): A list of retractions representing the functions in the IFS.
@@ -29,21 +34,34 @@ def approximate_attractor(
     Returns:
         List[Tuple[float, ...]]: A list of points approximating the attractor after applying
             all combinations of IFS functions for the specified number of iterations.
+
     """
     if number_iterations == 0:
         return points
 
-    new_points: List[Tuple[float, ...]] = []
+    new_points: list[tuple[float, ...]] = []
     for point in points:
         for func in ifs:
-            new_points.append(func(*point)) # type: ignore[arg-type]
+            new_points.append(func(*point))  # type: ignore[arg-type]  # noqa: PERF401
 
     return approximate_attractor(ifs, new_points, number_iterations - 1)
 
 
 def apply_sequence(
-    funcs: List[Callable[[float, Any], Tuple[float, ...]]], point: Tuple[float, ...]
-) -> Tuple[float, ...]:
+    funcs: list[Callable[[float, Any], tuple[float, ...]]],
+    point: tuple[float, ...],
+) -> tuple[float, ...]:
+    """
+    Apply iteratively a sequence of functions to a point.
+
+    Args:
+        funcs (list[Callable[[float, Any], tuple[float, ...]]]): Functions
+        point (tuple[float, ...]): Point to which the functions should be applied
+
+    Returns:
+        tuple[float, ...]: Result of f_1(f_2(...f_n(p)))
+
+    """
     for func in funcs:
         point = func(*point)
 
@@ -51,14 +69,13 @@ def apply_sequence(
 
 
 def approximate_attractor_randomized(
-    functions: List[Callable[..., Tuple[float, ...]]],
-    initial_points: List[Tuple[float, ...]],
+    functions: list[Callable[..., tuple[float, ...]]],
+    initial_points: list[tuple[float, ...]],
     number_of_samples: int,
     number_of_iterations: int,
-) -> List[Tuple[float, ...]]:
-    result: List[Tuple[float, ...]] = []
+) -> list[tuple[float, ...]]:
     """
-    Approximates the attractor of an Iterated Function System (IFS) using random iteration.
+    Approximate the attractor of an Iterated Function System (IFS) using random iteration.
 
     This function simulates the attractor of a given IFS by repeatedly applying randomly
     selected functions from the system to a set of initial points. For each initial point,
@@ -66,7 +83,8 @@ def approximate_attractor_randomized(
     specified number of iterations.
 
     Args:
-        functions (List[Retraction]): A list of retractions representing the functions in the IFS.
+        functions (List[Callable[..., Tuple[float, ...]]]): A list of retractions representing
+            the functions in the IFS.
         initial_points (List[Tuple[float, ...]]): A list of starting points in the space where
             the IFS is defined.
         number_of_samples (int): The total number of sample points to generate in the attractor.
@@ -74,9 +92,11 @@ def approximate_attractor_randomized(
             determining how far the initial point is iterated through the IFS.
 
     Returns:
-        List[Tuple[float, ...]]: A list of points approximating the attractor after applying
+        list[tuple[float, ...]]: A list of points approximating the attractor after applying
             all combinations of IFS functions for the specified number of iterations.
+
     """
+    result: list[tuple[float, ...]] = []
 
     for point in initial_points:
         for _ in tqdm(
@@ -94,7 +114,7 @@ def approximate_attractor_randomized(
 
 def _approximate_dimension_for_similarity(ifs: Iterable[np.ndarray]) -> float:
     """
-    Calculates the dimension of an iterated function system of similarity transformations.
+    Calculate the dimension of an iterated function system of similarity transformations.
 
     Args:
         ifs (Iterable(np.ndarray)): Iterated function system.
@@ -106,7 +126,7 @@ def _approximate_dimension_for_similarity(ifs: Iterable[np.ndarray]) -> float:
     """
 
     # Check if matrix are similarity
-    def is_similarity(A: np.ndarray, tol=1e-8) -> bool:
+    def is_similarity(A: np.ndarray, tol: float = 1e-8) -> bool:
         M = A.T @ A
         eigvals = np.linalg.eigvalsh(M)
         return np.allclose(eigvals, eigvals[0], atol=tol)
@@ -114,13 +134,14 @@ def _approximate_dimension_for_similarity(ifs: Iterable[np.ndarray]) -> float:
     r_values = []
     for A in ifs:
         if not is_similarity(A):
-            raise ValueError("Not all matrices are similarity transformations.")
+            msg = "Not all matrices are similarity transformations."
+            raise ValueError(msg)
         # Since A^T A = r^2 I, r = sqrt(eigenvalue)
         eigval = np.linalg.eigvalsh(A.T @ A)[0]  # they are all equal
         r = np.sqrt(eigval)
         r_values.append(r)
 
-    def dimension_equation(s):
+    def dimension_equation(s: float) -> float:
         return sum(r**s for r in r_values) - 1
 
     # Compute upper bound for the r_i: log(n) / log(1 / r_min)
@@ -130,8 +151,7 @@ def _approximate_dimension_for_similarity(ifs: Iterable[np.ndarray]) -> float:
     upper_bound = np.log(len(r_values)) / np.log(1 / r_min) + 1  # safety margin
 
     # Solve dimension_equation == 0 using bisection in interval [0, upper_bound]
-    dim = bisect(dimension_equation, 0.0, upper_bound)
-    return dim
+    return bisect(dimension_equation, 0.0, upper_bound)
 
 
 def box_count(points: np.ndarray, eps: float) -> int:
@@ -142,6 +162,7 @@ def box_count(points: np.ndarray, eps: float) -> int:
         points (np.ndarray): ndarray of shape (sample_size, d), providing the
             points row by row
         eps (float): Diameter of sets to cover the points with.
+
     """
     boxes = set()
     # scales the boxis to unit length
@@ -152,11 +173,11 @@ def box_count(points: np.ndarray, eps: float) -> int:
     return len(boxes)
 
 
-def estimate_box_dimension(points: np.ndarray, min_exp=3, max_exp=10):
+def estimate_box_dimension(points: np.ndarray, min_exp: int = 3, max_exp: int = 10) -> float:
     """
-    Estimate the box-counting dimension of a point cloud using a log-log
-    linear regression on box counts.
+    Estimate the box-counting dimension of a point cloud.
 
+    It calculates a log-log linear regression on box counts.
     This function overlays grids of side length ε = 2^-k for k in the range
     [min_exp, max_exp], counts how many boxes contain at least one point,
     and fits a linear model to log(N(ε)) vs. log(1/ε). The slope of the line
@@ -170,6 +191,7 @@ def estimate_box_dimension(points: np.ndarray, min_exp=3, max_exp=10):
 
     Returns:
         A float representing the estimated box-counting dimension.
+
     """
     epsilons = [2**-k for k in range(min_exp, max_exp + 1)]
     counts = [box_count(points, eps) for eps in tqdm(epsilons, desc="Computing box counts")]
@@ -178,8 +200,8 @@ def estimate_box_dimension(points: np.ndarray, min_exp=3, max_exp=10):
     log_N = np.log(counts)
 
     # Since N(ε) ≈ ε^(-d), use least-squares linear regression for following equation:
-    # logN(ε) ≈ −d⋅logε+C
-    d, C = np.polyfit(log_eps, log_N, 1)
+    # logN(ε) ≈ -d⋅logε+C
+    d, _ = np.polyfit(log_eps, log_N, 1)
     return d
 
 
@@ -188,7 +210,7 @@ if __name__ == "__main__":
     number_of_samples = int(1e6)
     number_of_iterations = 20
 
-    iterated_function_system: dict[str, List[Callable[..., Tuple[float, ...]]]] = {
+    iterated_function_system: dict[str, list[Callable[..., tuple[float, ...]]]] = {
         "ex_functions": [
             lambda x, y: (0.8 * x + 0.1, 0.8 * y + 0.04),
             lambda x, y: (0.6 * x + 0.19, 0.6 * y + 0.5),
@@ -201,54 +223,40 @@ if __name__ == "__main__":
             lambda x, y: (0.5 * x, 0.5 * (y + 3)),
         ],
         "Black Spleenwort Fern": [
-            lambda x, y: (0, 0.16 * y),
+            lambda _, y: (0, 0.16 * y),
             lambda x, y: (0.85 * x + 0.04 * y, -0.04 * x + 0.85 * y + 1.6),
             lambda x, y: (0.2 * x - 0.26 * y, 0.24 * x + 0.22 * y + 1.6),
             lambda x, y: (-0.15 * x + 0.28 * y, 0.26 * x + 0.24 * y + 0.44),
         ],
     }
 
-    # solve sum_i r_i^s = 1 for rescaling factors r_i
-    # logger.info("Calculatin dimension.")
-    # iterated_function_systems = [
-    #     [
-    #         np.array([[0.8, 0], [0, 0.8]]),
-    #         np.array([[0.6, 0], [0, 0.6]]),
-    #         np.array([[0.446, 0.446], [0.446, -0.446]]),
-    #         np.array([[0.446, -0.446], [0.446, 0.446]])
-    #     ],
-    #     [
-    #         np.array([[0.5, 0], [0, 0.5]]),
-    #         np.array([[0.5, 0], [0, 0.5]]),
-    #     ]
-    #     ]
-
-    # dimension = approximate_dimension_for_similarity(ifs=ifs)
-    # logger.info(f"Dimension of ifs is: {dimension}")
-
     for name, func in iterated_function_system.items():
-        logger.info(f"Calculating attractor for {name}.")
+        logger.info("Calculating attractor for {name}.")
         high_res_samples = approximate_attractor_randomized(
-            func, [(1.0, 1.0)], number_of_samples=number_of_samples, number_of_iterations=number_of_iterations
+            func,
+            [(1.0, 1.0)],
+            number_of_samples=number_of_samples,
+            number_of_iterations=number_of_iterations,
         )
         points = np.array(high_res_samples)
 
-        logger.info(f"Estimating Box dimension for {name}...")
+        logger.info("Estimating Box dimension for {name}...")
         dimension = estimate_box_dimension(points)
-        logger.info(f"Estimated Box dimension for {name} = {dimension}")
+        logger.info("Estimated Box dimension for {name} = {dimension}")
 
         epsilon = number_of_samples ** (-1 / dimension)
-        logger.info(f"Suggested diameter for covering sets is {epsilon}")
+        logger.info("Suggested diameter for covering sets is {epsilon}")
 
         # Plot the high-resolution results
-        logger.info(f"Creating plot for {name}.")
-        x_vals_hr, y_vals_hr = zip(*high_res_samples)
+        logger.info("Creating plot for {name}.")
+        x_vals_hr, y_vals_hr = zip(*high_res_samples, strict=False)
         plt.figure(figsize=(10, 10))
         plt.scatter(x_vals_hr, y_vals_hr, s=epsilon, color="black")
         plt.axis("equal")
         plt.axis("off")
         plt.title(
-            f"High-Resolution Approximation of {name} with {number_of_samples} samples and {number_of_iterations} Iterations"
+            f"High-Resolution Approximation of {name} with {number_of_samples} samples \
+            and {number_of_iterations} Iterations",
         )
 
         if not Path("./attractors").exists():

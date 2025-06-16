@@ -20,5 +20,22 @@ dev = [
 ]
 
 [tool.ruff]
-# Set the maximum line length to 79.
+# Set the maximum line length to 120.
 line-length = 120
+
+[tool.ruff.lint]
+# 1. Enable flake8-bugbear (`B`) rules, in addition to the defaults.
+select = ["ALL"]
+
+ignore = [
+    "E501",
+    "N803", # Checks for argument names that do not follow the snake_case convention.
+    "N806", # Checks for the use of non-lowercase variable names in functions.
+    "S311", # Checks for uses of cryptographically weak pseudo-random number generators.
+    "D100", # Missing module docstring
+    "D203", # incorrect-blank-line-before-class
+    "D212", # multi-line-summary-first-line
+    ]
+
+# 3. Avoid trying to fix flake8-bugbear (`B`) violations.
+unfixable = ["B"]
