@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 import random
-from typing import Callable, Iterable, Protocol, List, Tuple
+from typing import Any, Callable, Iterable, List, Tuple
 import numpy as np
 from scipy.optimize import bisect
 from tqdm import tqdm
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def approximate_attractor(
-    ifs: List[Callable], points: List[Tuple[float, ...]], number_iterations: int
+    ifs: List[Callable[[Tuple[float, ...]], Tuple[float, ...]]], points: List[Tuple[float, ...]], number_iterations: int
 ) -> List[Tuple[float, ...]]:
     """
     Approximates the attractor of an Iterated Function System (IFS) by recursively applying
@@ -36,12 +36,14 @@ def approximate_attractor(
     new_points: List[Tuple[float, ...]] = []
     for point in points:
         for func in ifs:
-            new_points.append(func(*point))
+            new_points.append(func(*point)) # type: ignore[arg-type]
 
     return approximate_attractor(ifs, new_points, number_iterations - 1)
 
 
-def apply_sequence(funcs: List[Callable], point: Tuple[float, ...]) -> Tuple[float, ...]:
+def apply_sequence(
+    funcs: List[Callable[[float, Any], Tuple[float, ...]]], point: Tuple[float, ...]
+) -> Tuple[float, ...]:
     for func in funcs:
         point = func(*point)
 
@@ -49,7 +51,7 @@ def apply_sequence(funcs: List[Callable], point: Tuple[float, ...]) -> Tuple[flo
 
 
 def approximate_attractor_randomized(
-    functions: List[Callable],
+    functions: List[Callable[..., Tuple[float, ...]]],
     initial_points: List[Tuple[float, ...]],
     number_of_samples: int,
     number_of_iterations: int,
@@ -186,7 +188,7 @@ if __name__ == "__main__":
     number_of_samples = int(1e6)
     number_of_iterations = 20
 
-    iterated_function_system: dict[str, List[Callable]] = {
+    iterated_function_system: dict[str, List[Callable[..., Tuple[float, ...]]]] = {
         "ex_functions": [
             lambda x, y: (0.8 * x + 0.1, 0.8 * y + 0.04),
             lambda x, y: (0.6 * x + 0.19, 0.6 * y + 0.5),
@@ -253,6 +255,7 @@ if __name__ == "__main__":
             Path("./attractors").mkdir()
         path_name = name.replace(" ", "_")
         plt.savefig(
-            f"./output/attractors/{path_name}_{number_of_samples}_samples_{number_of_iterations}_iterations.jpg", dpi=300
+            f"./output/attractors/{path_name}_{number_of_samples}_samples_{number_of_iterations}_iterations.jpg",
+            dpi=300,
         )
         plt.close()
