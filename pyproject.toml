@@ -7,7 +7,10 @@ requires-python = ">=3.10"
 dependencies = [
     "logging>=0.4.9.6",
     "matplotlib>=3.10.3",
+    "mypy>=1.16.0",
     "scipy>=1.15.3",
+    "scipy-stubs>=1.15.3.0",
+    "tqdm>=4.67.1",
     "typing>=3.10.0.0",
 ]
 

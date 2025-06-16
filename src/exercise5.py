@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 import random
-from typing import Iterable, Protocol, List, Tuple
+from typing import Callable, Iterable, Protocol, List, Tuple
 import numpy as np
 from scipy.optimize import bisect
 from tqdm import tqdm
@@ -12,12 +12,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-class Retraction(Protocol):
-    def __call__(self, *args: float) -> Tuple[float, ...]: ...
-
-
 def approximate_attractor(
-    ifs: List[Retraction], points: List[Tuple[float, ...]], number_iterations: int
+    ifs: List[Callable], points: List[Tuple[float, ...]], number_iterations: int
 ) -> List[Tuple[float, ...]]:
     """
     Approximates the attractor of an Iterated Function System (IFS) by recursively applying
@@ -45,7 +41,7 @@ def approximate_attractor(
     return approximate_attractor(ifs, new_points, number_iterations - 1)
 
 
-def apply_sequence(funcs: List[Retraction], point: Tuple[float, ...]) -> Tuple[float, ...]:
+def apply_sequence(funcs: List[Callable], point: Tuple[float, ...]) -> Tuple[float, ...]:
     for func in funcs:
         point = func(*point)
 
@@ -53,7 +49,7 @@ def apply_sequence(funcs: List[Retraction], point: Tuple[float, ...]) -> Tuple[f
 
 
 def approximate_attractor_randomized(
-    functions: List[Retraction],
+    functions: List[Callable],
     initial_points: List[Tuple[float, ...]],
     number_of_samples: int,
     number_of_iterations: int,
@@ -190,7 +186,7 @@ if __name__ == "__main__":
     number_of_samples = int(1e6)
     number_of_iterations = 20
 
-    iterated_function_system: dict[str, List[Retraction]] = {
+    iterated_function_system: dict[str, List[Callable]] = {
         "ex_functions": [
             lambda x, y: (0.8 * x + 0.1, 0.8 * y + 0.04),
             lambda x, y: (0.6 * x + 0.19, 0.6 * y + 0.5),
@@ -257,6 +253,6 @@ if __name__ == "__main__":
             Path("./attractors").mkdir()
         path_name = name.replace(" ", "_")
         plt.savefig(
-            f"./attractors/{path_name}_{number_of_samples}_samples_{number_of_iterations}_iterations.jpg", dpi=300
+            f"./output/attractors/{path_name}_{number_of_samples}_samples_{number_of_iterations}_iterations.jpg", dpi=300
         )
         plt.close()
