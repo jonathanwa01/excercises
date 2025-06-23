@@ -200,7 +200,7 @@ def estimate_box_dimension(points: np.ndarray, min_exp: int = 3, max_exp: int = 
     log_N = np.log(counts)
 
     # Since N(ε) ≈ ε^(-d), use least-squares linear regression for following equation:
-    # logN(ε) ≈ -d⋅logε+C
+    # logN(ε) ≈ -d⋅logε+C = -d⋅log(1/ε)+C
     d, _ = np.polyfit(log_eps, log_N, 1)
     return d
 
