@@ -1,11 +1,12 @@
-from collections.abc import Iterable
 import logging
-from typing import Callable
+from collections.abc import Callable, Iterable
+
 import numpy as np
 import plotly.graph_objects as go
 from tqdm import tqdm
 
-from exercise5 import approximate_attractor_randomized
+# missing stubs
+from exercise5 import approximate_attractor_randomized  # type: ignore[import-not-found]
 
 # logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -63,24 +64,25 @@ def estimate_box_dimension(points: np.ndarray, min_exp: int = 3, max_exp: int = 
     return d
 
 
-def loglog_box_covering_samples(points: np.ndarray,
-                             iteration_range: Iterable[float] = list(range(3, 10))) -> list[tuple[float, float]]:
+def loglog_box_covering_samples(
+    points: np.ndarray, iteration_range: Iterable[float] = list(range(3, 10))
+) -> tuple[np.ndarray, np.ndarray]:
     """
-    Computes log-log data points for box-counting analysis of a point set.
+    Compute log-log data points for box-counting analysis of a point set.
 
-    For each scale δₖ = 2^(-k), this function calculates the number of boxes Nₖ 
-    of size δₖ required to cover the given set of points, and returns the 
+    For each scale δₖ = 2^(-k), this function calculates the number of boxes Nₖ
+    of size δₖ required to cover the given set of points, and returns the
     corresponding log-log pairs (log₂(δₖ), log₂(Nₖ)).
 
     Args:
         points (np.ndarray): Array of points representing the set to analyze.
-        iteration_range (Iterable[int]): Iterable of integer exponents k to define 
+        iteration_range (Iterable[int]): Iterable of integer exponents k to define
                                          the box size as δₖ = 2^(-k). Default is range(1, 10).
 
     Returns:
         tuple[np.ndarray, np.ndarray]: Tuple (log₂(1/δₖ), log₂(Nₖ)).
-    """
 
+    """
     epsilons = [2**-k for k in iteration_range]
     counts = [box_count(points, eps) for eps in tqdm(epsilons, desc="Computing box counts")]
 
@@ -95,12 +97,6 @@ if __name__ == "__main__":
     number_of_iterations = 20
 
     iterated_function_system: dict[str, list[Callable[..., tuple[float, ...]]]] = {
-        # "ex_functions": [
-        #     lambda x, y: (0.8 * x + 0.1, 0.8 * y + 0.04),
-        #     lambda x, y: (0.6 * x + 0.19, 0.6 * y + 0.5),
-        #     lambda x, y: (0.446 * (x - y) + 0.266, 0.466 * (x + y) + 0.067),
-        #     lambda x, y: (0.446 * (x + y) + 0.456, 0.446 * (x - y) + 0.434),
-        # ],
         "Sierpinski Triangle": [
             lambda x, y: (0.5 * (x - 3), 0.5 * y),
             lambda x, y: (0.5 * (x + 3), 0.5 * y),
@@ -115,7 +111,7 @@ if __name__ == "__main__":
     }
 
     for name, func in iterated_function_system.items():
-        logger.info(f"Calculating attractor for {name}.")
+        logger.info("Calculating attractor for %s.", name)
         high_res_samples = approximate_attractor_randomized(
             func,
             [(1.0, 1.0)],
@@ -123,8 +119,8 @@ if __name__ == "__main__":
             number_of_iterations=number_of_iterations,
         )
         points = np.array(high_res_samples)
-        logger.info(f"Calculating box covering samples for {name}.")
-        x_vals, y_vals = loglog_box_covering_samples(points, list(range(1,20)))
+        logger.info("Calculating box covering samples for %s.", name)
+        x_vals, y_vals = loglog_box_covering_samples(points)
         # calculate the slope (boxplot dim)
         d, C = np.polyfit(x_vals, y_vals, 1)
 
@@ -135,37 +131,43 @@ if __name__ == "__main__":
         fig = go.Figure()
 
         # (log-log plot)
-        fig.add_trace(go.Scatter(
-            x=x_vals,
-            y=y_vals,
-            mode='markers+lines',
-            name='log-log data'
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=x_vals,
+                y=y_vals,
+                mode="markers+lines",
+                name="log-log data",
+            )
+        )
 
         # Dimension line
-        fig.add_trace(go.Scatter(
-            x=x_fit,
-            y=y_fit,
-            mode='lines',
-            name=f'Fit: y = {d:.4f}x + {C:.4f}',
-            line=dict(dash='dash')
-        ))
-        
+        fig.add_trace(
+            go.Scatter(
+                x=x_fit,
+                y=y_fit,
+                mode="lines",
+                name=f"Fit: y = {d:.4f}x + {C:.4f}",
+                line={"dash": "dash"},
+            )
+        )
+
         fig.update_layout(
             xaxis_title="log(δₖ)",
             yaxis_title="log(Nₖ)",
-            title=f"Log Log Plot box-couting dimension for {name}"
+            title=f"Log Log Plot box-couting dimension for {name}",
         )
         fig.add_annotation(
             text=f"Slope = {d}",
-            xref="paper", yref="paper",
-            x=0.05, y=0.95,  # Position in figure coordinates (0 to 1)
+            xref="paper",
+            yref="paper",
+            x=0.05,
+            y=0.95,  # Position in figure coordinates (0 to 1)
             showarrow=False,
-            font=dict(size=12, color="black"),
+            font={"size": 12, "color": "black"},
             bordercolor="black",
             borderwidth=1,
             borderpad=4,
             bgcolor="lightgray",
-            opacity=0.8
+            opacity=0.8,
         )
         fig.show()

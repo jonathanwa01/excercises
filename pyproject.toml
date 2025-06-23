@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "diskcache>=5.6.3",
     "logging>=0.4.9.6",
     "matplotlib>=3.10.3",
     "mypy>=1.16.0",
@@ -41,3 +42,7 @@ ignore = [
 
 # 3. Avoid trying to fix flake8-bugbear (`B`) violations.
 unfixable = ["B"]
+
+[[tool.mypy.overrides]]
+module = "src/exercise5.py"
+ignore_missing_imports = true
