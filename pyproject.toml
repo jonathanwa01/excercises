@@ -42,6 +42,7 @@ ignore = [
     "TRY003", # Avoid specifying long messages outside the exception class
     "D102", # Missing docstring in public method
     "D105", # Missing docstring in magic method
+    "PLR2004" # Magic value used in comparison
     ]
 
 # 3. Avoid trying to fix flake8-bugbear (`B`) violations.
