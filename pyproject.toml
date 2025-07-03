@@ -38,6 +38,10 @@ ignore = [
     "D100", # Missing module docstring
     "D203", # incorrect-blank-line-before-class
     "D212", # multi-line-summary-first-line
+    "EM101", # Exception must not use a string literal
+    "TRY003", # Avoid specifying long messages outside the exception class
+    "D102", # Missing docstring in public method
+    "D105", # Missing docstring in magic method
     ]
 
 # 3. Avoid trying to fix flake8-bugbear (`B`) violations.
