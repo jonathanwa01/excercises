@@ -1,8 +1,11 @@
 import random
 from collections.abc import Sequence
 from typing import Union
+
+import dash
 import numpy as np
 import plotly.graph_objects as go
+from dash import Input, Output, dcc, html
 from tqdm import tqdm
 
 
@@ -210,14 +213,15 @@ def compute_preimages_randomized(f: Polynomial, k: int, z: complex) -> np.ndarra
     preimages = []
     curr = z
 
-    for _ in tqdm(range(k), desc="Sampling roots of attractor:"):
+    for _ in tqdm(range(k), desc="Sampling points of attractor:"):
         roots = np.roots((f - curr).coeffs)
         curr = random.choice(roots)
         preimages.append(curr)
 
     return np.array(preimages).reshape(-1,1)
 
-if __name__ == "__main__":
+
+def ex1() -> None:  # noqa: D103
     f = Polynomial([1, 0, -1])
     preimages = compute_preimages_randomized(f, 200000, 1)[10000:]
     fig = go.Figure(
@@ -231,3 +235,89 @@ if __name__ == "__main__":
         title=f"Julia Set of {f}",
     )
     fig.show()
+
+
+# Initialize the Dash app
+app = dash.Dash(__name__)
+
+
+# Layout with sliders for real and imaginary parts
+app.layout = html.Div([
+    html.H2("Interactive Plot of Julia set z^2 + c"),
+
+    html.Div([
+        html.Label("Real part of c:"),
+        dcc.Slider(
+            id="real-slider",
+            min=-4,
+            max=4,
+            step=0.1,
+            value=-0.3,
+            marks={i: str(i) for i in range(-4, 5)},
+        ),
+    ], style={"margin-bottom": "30px"}),
+
+    html.Div([
+        html.Label("Imaginary part of c:"),
+        dcc.Slider(
+            id="imag-slider",
+            min=-4,
+            max=4,
+            step=0.1,
+            value=-0.3,
+            marks={i: str(i) for i in range(-4, 5)},
+        ),
+    ], style={"margin-bottom": "30px"}),
+
+    html.Div(id="z-display", style={"margin-bottom": "20px", "fontWeight": "bold"}),
+
+    dcc.Graph(id="complex-plot"),
+])
+
+
+# Callback to update plot
+@app.callback(
+    Output("complex-plot", "figure"),
+    Output("z-display", "children"),
+    Input("real-slider", "value"),
+    Input("imag-slider", "value"),
+)
+def update_plot(real: float, imag: float) -> tuple[go.Figure, str]:
+    """
+    Callbacl function for updating plot.
+
+    Args:
+        real (float): Real part of c
+        imag (float): Imaginary part of c
+
+    Returns:
+        tuple[go.Figure, str]: Figure and error message
+
+    """
+    try:
+        # Safely parse the complex number
+        z = complex(real, imag)
+        f: Polynomial = Polynomial([1, 0, z])
+
+        preimages = compute_preimages_randomized(f, 20000, 1)[10000:]
+
+        fig = go.Figure(
+            go.Scatter(
+                x=preimages.real.flatten().tolist(),
+                y=preimages.imag.flatten().tolist(),
+                mode="markers",
+            ),
+        )
+        fig.update_layout(
+            title=f"Julia Set of {f}",
+        )
+        return fig, ""
+
+    except Exception as e:  # noqa: BLE001
+        # Handle invalid complex number format
+        empty_fig = go.Figure()
+        return empty_fig, f"Invalid complex number: {e!s}"
+
+
+if __name__ == "__main__":
+    app.run(debug=True)

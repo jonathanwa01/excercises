@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "dash>=3.1.1",
     "diskcache>=5.6.3",
     "logging>=0.4.9.6",
     "matplotlib>=3.10.3",
@@ -42,7 +43,8 @@ ignore = [
     "TRY003", # Avoid specifying long messages outside the exception class
     "D102", # Missing docstring in public method
     "D105", # Missing docstring in magic method
-    "PLR2004" # Magic value used in comparison
+    "PLR2004", # Magic value used in comparison
+    "TRY300", # Else block after try
     ]
 
 # 3. Avoid trying to fix flake8-bugbear (`B`) violations.
