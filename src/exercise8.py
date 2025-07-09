@@ -130,7 +130,7 @@ def iterations_to_colormap(iter_array: np.ndarray, max_iter: int, cmap_name: str
 def setup_scene(
     rgb_image: np.ndarray,
     canvas_size: tuple[int, int],
-) -> tuple[scene.SceneCanvas, scene.visuals.Image, scene.cameras.PanZoomCamera]:
+) -> tuple[scene.SceneCanvas, scene.visuals.Image, scene.widgets.ViewBox]:
     """
     Set up the VisPy canvas and scene for displaying the Mandelbrot image.
 
@@ -140,7 +140,7 @@ def setup_scene(
         on_zoom (Callable): On zoom callback
 
     Returns:
-        tuple: (canvas, image visual, camera) for further interaction
+        tuple: (canvas, image visual, view) for further interaction
 
     """
     canvas = scene.SceneCanvas(title="Mandelbrot Set", keys="interactive", size=canvas_size, show=True)
@@ -152,7 +152,7 @@ def setup_scene(
     view.camera = camera
     view.camera.flip = (0, 1, 0)
     view.camera.set_range()
-    return canvas, image, camera
+    return canvas, image, view
 
 
 def main() -> None:  # noqa: D103
@@ -180,7 +180,7 @@ def main() -> None:  # noqa: D103
     rgb_image = rgb_image.reshape((height, width, 3))
 
     # Setup scene
-    canvas, image, _ = setup_scene(rgb_image, (width, height))
+    canvas, image, view = setup_scene(rgb_image, (width, height))
 
     def update_frame(_event: Event) -> None:
         # Zoom in
@@ -215,11 +215,12 @@ def main() -> None:  # noqa: D103
         logger.info("Shape: %s", rgb_image.shape)
 
         # Remove previous visual and add new one
+        nonlocal image
         image.parent = None
         # ascontiguousarray for performance
         image = scene.visuals.Image(
             np.ascontiguousarray(rgb_image),
-            parent=canvas.central_widget.children[0].scene,
+            parent=view.scene,
             method="subdivide",
         )
 
