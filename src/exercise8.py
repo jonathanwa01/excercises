@@ -124,7 +124,8 @@ def iterations_to_colormap(iter_array: np.ndarray, max_iter: int, cmap_name: str
 
 
 def setup_scene(
-    rgb_image: np.ndarray, canvas_size: tuple[int, int],
+    rgb_image: np.ndarray,
+    canvas_size: tuple[int, int],
 ) -> tuple[scene.SceneCanvas, scene.visuals.Image, scene.cameras.PanZoomCamera]:
     """
     Set up the VisPy canvas and scene for displaying the Mandelbrot image.
