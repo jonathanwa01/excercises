@@ -12,10 +12,12 @@ dependencies = [
     "mypy>=1.16.0",
     "numpy>=2.2.6",
     "plotly-stubs>=0.0.5",
+    "pyqt5>=5.15.11",
     "scipy>=1.15.3",
     "scipy-stubs>=1.15.3.0",
     "tqdm>=4.67.1",
     "typing>=3.10.0.0",
+    "vispy>=0.15.2",
 ]
 
 [dependency-groups]
@@ -51,5 +53,9 @@ ignore = [
 unfixable = ["B"]
 
 [[tool.mypy.overrides]]
-module = "src/exercise5.py"
+module = ["src.exercise5"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["vispy", "vispy.*"]
 ignore_missing_imports = true

@@ -222,7 +222,7 @@ def compute_preimages_randomized(f: Polynomial, k: int, z: complex) -> np.ndarra
 
 
 def ex1() -> None:  # noqa: D103
-    f = Polynomial([1, 0, -1])
+    f = Polynomial([1, 0, -0.3+0.3j])
     preimages = compute_preimages_randomized(f, 200000, 1)[10000:]
     fig = go.Figure(
         go.Scatter(
@@ -321,3 +321,4 @@ def update_plot(real: float, imag: float) -> tuple[go.Figure, str]:
 
 if __name__ == "__main__":
     app.run(debug=True)
+    # ex1()
