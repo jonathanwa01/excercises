@@ -1,14 +1,18 @@
 import logging
 
 import numpy as np
+from numba import njit
 from vispy import app, color, scene
 from vispy.scene.cameras import PanZoomCamera
+from vispy.util.event import Event
 
 # logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
+# fastly compiles with
+@njit
 def is_outside_mandelbrot(c: complex, N: int, r: float) -> int:
     """
     Check whether a complex number c escapes the radius r within N iterations.
@@ -152,21 +156,75 @@ def setup_scene(
 
 
 def main() -> None:  # noqa: D103
+    # Initial image dimensions
     width, height = 800, 800
-    xmin, xmax = -2.0, 2.0
-    ymin, ymax = -2.0, 2.0
+
+    # Initial zoom parameters
+    center_x, center_y = -0.743643135, 0.131825963  # Interesting deep-zoom point
+    zoom_factor = 0.95
+    frame = {"count": 0}
+    x_width = 4.0
+    y_height = 4.0
+
+    max_iter_start = 100
     radius = 2.0
-    max_iter = 100
 
-    logger.info("Computing Mandelbrot set...")
-    escape_array = compute_mandelbrot_grid(xmin, xmax, ymin, ymax, width, height, radius, max_iter)
+    # Compute initial frame
+    x_min = center_x - x_width / 2
+    x_max = center_x + x_width / 2
+    y_min = center_y - y_height / 2
+    y_max = center_y + y_height / 2
 
-    logger.info("Generating RGB image...")
-    rgb_image = iterations_to_colormap(escape_array, max_iter)
+    mandelbrot_grid = compute_mandelbrot_grid(x_min, x_max, y_min, y_max, width, height, radius, max_iter_start)
+    rgb_image = iterations_to_colormap(mandelbrot_grid, max_iter_start)
     rgb_image = rgb_image.reshape((height, width, 3))
 
-    logger.info("Setting up VisPy canvas...")
-    _ = setup_scene(rgb_image, (width, height))
+    # Setup scene
+    canvas, image, _ = setup_scene(rgb_image, (width, height))
+
+    def update_frame(_event: Event) -> None:
+        # Zoom in
+        frame["count"] += 1
+        nonlocal x_width, y_height, image
+
+        x_width *= zoom_factor
+        y_height *= zoom_factor
+        x_min = center_x - x_width / 2
+        x_max = center_x + x_width / 2
+        y_min = center_y - y_height / 2
+        y_max = center_y + y_height / 2
+
+        # Increase iteration depth with zoom
+        max_iter = min(1000, max_iter_start + frame["count"] * 2)
+
+        logger.info(
+            "Frame %d: x=[%.6f, %.6f], y=[%.6f, %.6f], iter=%d",
+            frame["count"],
+            x_min,
+            x_max,
+            y_min,
+            y_max,
+            max_iter,
+        )
+
+        mandelbrot_grid = compute_mandelbrot_grid(x_min, x_max, y_min, y_max, width, height, radius, max_iter)
+
+        rgb_image = iterations_to_colormap(mandelbrot_grid, max_iter)
+        rgb_image = rgb_image.reshape((height, width, 3))
+
+        logger.info("Shape: %s", rgb_image.shape)
+
+        # Remove previous visual and add new one
+        image.parent = None
+        # ascontiguousarray for performance
+        image = scene.visuals.Image(
+            np.ascontiguousarray(rgb_image),
+            parent=canvas.central_widget.children[0].scene,
+            method="subdivide",
+        )
+
+    # Start zoom timer
+    _timer = app.Timer(interval=0.1, connect=update_frame, start=True)
 
     app.run()
 
