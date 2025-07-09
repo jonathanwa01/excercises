@@ -3,8 +3,6 @@ import logging
 import numpy as np
 from vispy import app, color, scene
 from vispy.scene.cameras import PanZoomCamera
-from vispy.scene.node import Node
-from vispy.scene.visuals import Image
 
 # logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -126,7 +124,7 @@ def iterations_to_colormap(iter_array: np.ndarray, max_iter: int, cmap_name: str
 
 
 def setup_scene(
-    rgb_image: np.ndarray, canvas_size: tuple[int, int]
+    rgb_image: np.ndarray, canvas_size: tuple[int, int],
 ) -> tuple[scene.SceneCanvas, scene.visuals.Image, scene.cameras.PanZoomCamera]:
     """
     Set up the VisPy canvas and scene for displaying the Mandelbrot image.
@@ -168,7 +166,7 @@ def main() -> None:  # noqa: D103
 
     logger.info("Setting up VisPy canvas...")
     _ = setup_scene(rgb_image, (width, height))
-    
+
     app.run()
 
 
