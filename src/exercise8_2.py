@@ -80,7 +80,7 @@ def compute_period_grid_parallel(
         np.ndarray: 2D array of detected periods, shape (height, width).
     """
     period_grid = np.zeros((height, width), dtype=np.uint8)
-    for i in prange(height):  # like range, but for parralelization using numda
+    for i in prange(height):  # like range, but for parallelization using numda
         for j in range(width):
             x = xmin + (xmax - xmin) * j / (width - 1)
             y = ymin + (ymax - ymin) * i / (height - 1)
