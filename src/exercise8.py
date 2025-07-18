@@ -89,6 +89,8 @@ def normalize_coloring(iteration_arr: np.ndarray, max_iter: int) -> np.ndarray:
         iteration_arr (np.ndarray): Array of number of iterations to escape
         max_iter (int): Number of total iterations
 
+    Returns:
+        np.ndarray: Normalized array.
     """
     return iteration_arr / max_iter
 
