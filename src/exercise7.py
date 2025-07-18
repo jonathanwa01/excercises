@@ -8,6 +8,8 @@ import plotly.graph_objects as go
 from dash import Input, Output, dcc, html
 from tqdm import tqdm
 
+from exercise8 import find_attracting_orbits  # type: ignore noqa: PGH003
+
 
 class Polynomial:
     """Class which represents a complex polynomial."""
@@ -163,6 +165,7 @@ def compute_preimages(f: Polynomial, k: int, z: complex) -> np.ndarray:
 
     return np.vstack(all_preimages)
 
+
 # Not much faster than above, since all roots are calcualted...
 # Also recursion depth is limited in python.
 def compute_preimages_randomized_recursively(f: Polynomial, k: int, z: complex) -> np.ndarray:
@@ -191,6 +194,7 @@ def compute_preimages_randomized_recursively(f: Polynomial, k: int, z: complex) 
 
     return np.vstack([compute_preimages_randomized_recursively(f, k - 1, random_preimage), random_preimage])
 
+
 def compute_preimages_randomized(f: Polynomial, k: int, z: complex) -> np.ndarray:
     """
     Compute the preimages f^(-k)(z) randomized and iteratively.
@@ -218,11 +222,11 @@ def compute_preimages_randomized(f: Polynomial, k: int, z: complex) -> np.ndarra
         curr = random.choice(roots)
         preimages.append(curr)
 
-    return np.array(preimages).reshape(-1,1)
+    return np.array(preimages).reshape(-1, 1)
 
 
 def ex1() -> None:  # noqa: D103
-    f = Polynomial([1, 0, -0.3+0.3j])
+    f = Polynomial([1, 0, -0.3 + 0.3j])
     preimages = compute_preimages_randomized(f, 200000, 1)[10000:]
     fig = go.Figure(
         go.Scatter(
@@ -242,37 +246,53 @@ app = dash.Dash(__name__)
 
 
 # Layout with sliders for real and imaginary parts
-app.layout = html.Div([
-    html.H2("Interactive Plot of Julia set z^2 + c"),
-
-    html.Div([
-        html.Label("Real part of c:"),
-        dcc.Slider(
-            id="real-slider",
-            min=-4,
-            max=4,
-            step=0.1,
-            value=-0.3,
-            marks={i: str(i) for i in range(-4, 5)},
+app.layout = html.Div(
+    [
+        html.H2("Interactive Plot of Julia set z^2 + c"),
+        html.Div(
+            [
+                html.Label("Real part of c:"),
+                dcc.Slider(
+                    id="real-slider",
+                    min=-4,
+                    max=4,
+                    step=0.01,
+                    value=-0.12,
+                    marks={i: str(i) for i in range(-4, 5)},
+                ),
+            ],
+            style={"margin-bottom": "30px"},
         ),
-    ], style={"margin-bottom": "30px"}),
-
-    html.Div([
-        html.Label("Imaginary part of c:"),
-        dcc.Slider(
-            id="imag-slider",
-            min=-4,
-            max=4,
-            step=0.1,
-            value=-0.3,
-            marks={i: str(i) for i in range(-4, 5)},
+        html.Div(
+            [
+                html.Label("Imaginary part of c:"),
+                dcc.Slider(
+                    id="imag-slider",
+                    min=-4,
+                    max=4,
+                    step=0.01,
+                    value=0.74,
+                    marks={i: str(i) for i in range(-4, 5)},
+                ),
+            ],
+            style={"margin-bottom": "30px"},
         ),
-    ], style={"margin-bottom": "30px"}),
-
-    html.Div(id="z-display", style={"margin-bottom": "20px", "fontWeight": "bold"}),
-
-    dcc.Graph(id="complex-plot"),
-])
+        html.Div(
+            [
+                html.Label("Show periodic points:"),
+                dcc.Checklist(
+                    id="show-periodic",
+                    options=["show"],
+                    value=[],
+                    inline=True,
+                ),
+            ],
+            style={"margin-bottom": "30px"},
+        ),
+        html.Div(id="z-display", style={"margin-bottom": "20px", "fontWeight": "bold"}),
+        dcc.Graph(id="complex-plot"),
+    ],
+)
 
 
 # Callback to update plot
@@ -281,14 +301,18 @@ app.layout = html.Div([
     Output("z-display", "children"),
     Input("real-slider", "value"),
     Input("imag-slider", "value"),
+    Input("show-periodic", "value"),
 )
-def update_plot(real: float, imag: float) -> tuple[go.Figure, str]:
+def update_plot(real: float, imag: float, show_periodic: list[str]) -> tuple[go.Figure, str]:
     """
     Callbacl function for updating plot.
 
     Args:
         real (float): Real part of c
         imag (float): Imaginary part of c
+        show_periodic (list[str]): List of selected checklist values (e.g., ["show"] if enabled, [] if disabled).
+            If non-empty, the function will plot the attracting periodic orbit points on top of the Julia set.
+            Typically controlled by a Dash dcc.Checklist component.
 
     Returns:
         tuple[go.Figure, str]: Figure and error message
@@ -306,10 +330,28 @@ def update_plot(real: float, imag: float) -> tuple[go.Figure, str]:
                 x=preimages.real.flatten().tolist(),
                 y=preimages.imag.flatten().tolist(),
                 mode="markers",
+                marker={"size": 1, "color": "blue"},
+                name="Julia Set",
             ),
         )
+        if show_periodic:
+            result = find_attracting_orbits(z)
+            if result:
+                period, orbit = result
+                fig.add_trace(
+                    go.Scatter(
+                        x=[pt.real for pt in orbit],
+                        y=[pt.imag for pt in orbit],
+                        mode="markers+text",
+                        marker={"size": 8, "color": "red", "symbol": "circle"},
+                        text=[f"P{period}"] * len(orbit),
+                        textposition="top center",
+                        name=f"Period-{period} orbit",
+                    ),
+                )
         fig.update_layout(
             title=f"Julia Set of {f}",
+            showlegend=True,
         )
         return fig, ""
 

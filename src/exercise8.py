@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+from scipy.optimize import root
 from vispy import app, color, scene
 from vispy.scene.cameras import PanZoomCamera
 
@@ -118,6 +119,65 @@ def iterations_to_colormap(iter_array: np.ndarray, max_iter: int, cmap_name: str
     rgba = cmap.map(normalized)
     # scale to [0, 255] since vispy color map creates colors in [0,1]
     return (rgba[..., :3] * 255).astype(np.uint8)
+
+
+def find_attracting_orbits(c: complex, max_period: int = 5, tol: float = 1e-6) -> tuple[int, list[complex]] | None:
+    """
+    Find attracting periodic orbits of f_c(z) = z^2 + c.
+
+    Args:
+        c (complex): Parameter c.
+        max_period (int): Maximum period to check.
+        tol (float): Numerical tolerance.
+
+    Returns:
+        ptional[Tuple[int, list[complex]]]: (period, periodic_orbit) if found, else None.
+
+    """
+
+    def f(z: complex, n: int) -> complex:
+        z = complex(z)
+        for _ in range(n):
+            z = z**2 + c
+        return z
+
+    for period in range(1, max_period + 1):
+        # Try multiple initial guesses
+        guesses = np.exp(2j * np.pi * np.linspace(0, 1, 10))
+
+        for guess in guesses:
+            # calculate f^period(z) - z = 0
+            sol = root(
+                lambda z, period=period: np.array(
+                    [
+                        (f(z[0] + 1j * z[1], period) - (z[0] + 1j * z[1])).real,
+                        (f(z[0] + 1j * z[1], period) - (z[0] + 1j * z[1])).imag,
+                    ],
+                ),
+                [guess.real, guess.imag],
+                tol=tol,
+            )  # type: ignore # noqa: PGH003
+            if sol.success:
+                z_sol: complex = sol.x[0] + 1j * sol.x[1]
+
+                # Compute (f^p)'(z_sol)
+                dz: complex = complex(1, 0)
+                z = z_sol
+                for _ in range(period):
+                    dz = dz * 2 * z
+                    z = z**2 + c
+
+                if abs(dz) < 1:  # attracting fix-point if |dz| = |(f^p)'(z_sol)| < 1
+                    orbit = [z_sol]
+                    z_next = z_sol
+                    for _ in range(period - 1):
+                        z_next = z_next**2 + c
+                        orbit.append(z_next)
+
+                    return period, orbit
+
+    # No attracting orbit found
+    return None
 
 
 # https://vispy.org/gallery/scene/image.html
