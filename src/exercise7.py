@@ -20,7 +20,7 @@ def find_attracting_orbits(c: complex, max_period: int = 5, tol: float = 1e-6) -
         tol (float): Numerical tolerance.
 
     Returns:
-        ptional[Tuple[int, list[complex]]]: (period, periodic_orbit) if found, else None.
+        Optional[Tuple[int, list[complex]]]: (period, periodic_orbit) if found, else None.
 
     """
 
@@ -67,6 +67,7 @@ def find_attracting_orbits(c: complex, max_period: int = 5, tol: float = 1e-6) -
 
     # No attracting orbit found
     return None
+
 
 class Polynomial:
     """Class which represents a complex polynomial."""

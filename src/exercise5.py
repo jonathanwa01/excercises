@@ -231,7 +231,7 @@ if __name__ == "__main__":
     }
 
     for name, func in iterated_function_system.items():
-        logger.info("Calculating attractor for {name}.")
+        logger.info("Calculating attractor for %s.", name)
         high_res_samples = approximate_attractor_randomized(
             func,
             [(1.0, 1.0)],
@@ -240,15 +240,15 @@ if __name__ == "__main__":
         )
         points = np.array(high_res_samples)
 
-        logger.info("Estimating Box dimension for {name}...")
+        logger.info("Estimating Box dimension for %s...", name)
         dimension = estimate_box_dimension(points)
-        logger.info("Estimated Box dimension for {name} = {dimension}")
+        logger.info("Estimated Box dimension for %s = %s", name, dimension)
 
-        epsilon = number_of_samples ** (-1 / dimension)
-        logger.info("Suggested diameter for covering sets is {epsilon}")
+        epsilon = float(number_of_samples) ** (-1 / dimension)
+        logger.info("Suggested diameter for covering sets is %d", epsilon)
 
         # Plot the high-resolution results
-        logger.info("Creating plot for {name}.")
+        logger.info("Creating plot for %s.", name)
         x_vals_hr, y_vals_hr = zip(*high_res_samples, strict=False)
         plt.figure(figsize=(10, 10))
         plt.scatter(x_vals_hr, y_vals_hr, s=epsilon, color="black")

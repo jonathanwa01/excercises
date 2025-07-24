@@ -65,7 +65,8 @@ def estimate_box_dimension(points: np.ndarray, min_exp: int = 3, max_exp: int = 
 
 
 def loglog_box_covering_samples(
-    points: np.ndarray, iteration_range: Iterable[float] = list(range(3, 10))
+    points: np.ndarray,
+    iteration_range: Iterable[float] = list(range(3, 10)),
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute log-log data points for box-counting analysis of a point set.
@@ -137,7 +138,7 @@ if __name__ == "__main__":
                 y=y_vals,
                 mode="markers+lines",
                 name="log-log data",
-            )
+            ),
         )
 
         # Dimension line
@@ -148,7 +149,7 @@ if __name__ == "__main__":
                 mode="lines",
                 name=f"Fit: y = {d:.4f}x + {C:.4f}",
                 line={"dash": "dash"},
-            )
+            ),
         )
 
         fig.update_layout(

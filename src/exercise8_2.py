@@ -1,6 +1,7 @@
 import logging
+
 import numpy as np
-from numba import njit, prange  # type: ignore
+from numba import njit, prange  # type: ignore noqa: PGH003
 from vispy import app, color, scene
 from vispy.scene.cameras import PanZoomCamera
 
@@ -21,6 +22,7 @@ def is_close(a: complex, b: complex, tol: float = 1e-6) -> bool:
 
     Returns:
         bool: True if |a - b| < tol, else False.
+
     """
     return abs(a - b) < tol
 
@@ -41,6 +43,7 @@ def find_critical_orbit_period(c: complex, max_iter: int = 1000, max_period: int
 
     Returns:
         int: Detected period (1, 2, ..., max_period), or 0 if none.
+
     """
     z = 0.0 + 0.0j
     orbit_buffer: np.ndarray = np.empty(max_period, dtype=np.complex128)
@@ -61,8 +64,14 @@ def find_critical_orbit_period(c: complex, max_iter: int = 1000, max_period: int
 
 
 @njit(parallel=True)
-def compute_period_grid_parallel(
-    xmin: float, xmax: float, ymin: float, ymax: float, width: int, height: int, max_period
+def compute_period_grid_parallel(  # noqa: PLR0913
+    xmin: float,
+    xmax: float,
+    ymin: float,
+    ymax: float,
+    width: int,
+    height: int,
+    max_period: int,
 ) -> np.ndarray:
     """
     Compute the attracting period for each point c on a complex grid.
@@ -78,6 +87,7 @@ def compute_period_grid_parallel(
 
     Returns:
         np.ndarray: 2D array of detected periods, shape (height, width).
+
     """
     period_grid = np.zeros((height, width), dtype=np.uint8)
     for i in prange(height):  # like range, but for parallelization using numda
@@ -100,6 +110,7 @@ def normalize_coloring(arr: np.ndarray, max_value: int) -> np.ndarray:
 
     Returns:
         np.ndarray: Normalized array.
+
     """
     return arr / max_value if max_value != 0 else arr
 
@@ -115,6 +126,7 @@ def period_to_colormap(period_array: np.ndarray, max_period: int, cmap_name: str
 
     Returns:
         np.ndarray: 3D uint8 RGB image, shape (height, width, 3).
+
     """
     cmap = color.get_colormap(cmap_name)
     normalized = normalize_coloring(period_array, max_period)
@@ -132,6 +144,7 @@ def setup_scene(rgb_image: np.ndarray, canvas_size: tuple[int, int]) -> scene.Sc
 
     Returns:
         scene.SceneCanvas: The created VisPy canvas.
+
     """
     canvas = scene.SceneCanvas(title="Mandelbrot Period Coloring", keys="interactive", size=canvas_size, show=True)
     view = canvas.central_widget.add_view()
@@ -144,7 +157,7 @@ def setup_scene(rgb_image: np.ndarray, canvas_size: tuple[int, int]) -> scene.Sc
     return canvas
 
 
-def main():
+def main() -> None:  # noqa: D103
     width, height = 600, 600
     xmin, xmax = -2.0, 1.0
     ymin, ymax = -1.5, 1.5

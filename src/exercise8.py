@@ -4,6 +4,7 @@ import numpy as np
 from scipy.optimize import root
 from vispy import app, color, scene
 from vispy.scene.cameras import PanZoomCamera
+from vispy.scene.visuals import Image
 
 # logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -91,6 +92,7 @@ def normalize_coloring(iteration_arr: np.ndarray, max_iter: int) -> np.ndarray:
 
     Returns:
         np.ndarray: Normalized array.
+
     """
     return iteration_arr / max_iter
 
@@ -188,14 +190,13 @@ def find_attracting_orbits(c: complex, max_period: int = 5, tol: float = 1e-6) -
 def setup_scene(
     rgb_image: np.ndarray,
     canvas_size: tuple[int, int],
-) -> tuple[scene.SceneCanvas, scene.visuals.Image, scene.cameras.PanZoomCamera]:
+) -> tuple[scene.SceneCanvas, Image, scene.cameras.PanZoomCamera]:
     """
     Set up the VisPy canvas and scene for displaying the Mandelbrot image.
 
     Args:
         rgb_image (np.ndarray): RGB image array of shape (H, W, 3)
         canvas_size (tuple): Tuple (width, height) specifying canvas size
-        on_zoom (Callable): On zoom callback
 
     Returns:
         tuple: (canvas, image visual, camera) for further interaction
@@ -204,7 +205,7 @@ def setup_scene(
     canvas = scene.SceneCanvas(title="Mandelbrot Set", keys="interactive", size=canvas_size, show=True)
     view = canvas.central_widget.add_view()
 
-    image = scene.visuals.Image(rgb_image, parent=view.scene, method="subdivide")
+    image = Image(rgb_image, parent=view.scene)
 
     camera = PanZoomCamera(aspect=1)
     view.camera = camera
