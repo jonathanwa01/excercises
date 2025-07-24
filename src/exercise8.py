@@ -5,12 +5,13 @@ from scipy.optimize import root
 from vispy import app, color, scene
 from vispy.scene.cameras import PanZoomCamera
 from vispy.scene.visuals import Image
+from numba import njit, prange
 
 # logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-
+@njit
 def is_outside_mandelbrot(c: complex, N: int, r: float) -> int:
     """
     Check whether a complex number c escapes the radius r within N iterations.
@@ -34,7 +35,7 @@ def is_outside_mandelbrot(c: complex, N: int, r: float) -> int:
             return k
     return N
 
-
+@njit(parallel=True)
 def compute_mandelbrot_grid(  # noqa: PLR0913
     x_min: float,
     x_max: float,
@@ -68,16 +69,13 @@ def compute_mandelbrot_grid(  # noqa: PLR0913
     """
     x = np.linspace(x_min, x_max, width)
     y = np.linspace(y_min, y_max, height)
-    X, Y = np.meshgrid(x, y)
-
-    C = X + 1j * Y
-
     # iteration matrix of shape (height, width) with numbers of iterations before espace
-    iterations = np.zeros_like(C, dtype=np.uint16)
+    iterations = np.zeros((height, width), dtype=np.uint16)
 
-    for i in range(height):
+    for i in prange(height):
         for j in range(width):
-            iterations[i, j] = is_outside_mandelbrot(C[i, j], N, r)
+            c = x[j] + 1j * y[i]
+            iterations[i, j] = is_outside_mandelbrot(c, N, r)
 
     return iterations
 

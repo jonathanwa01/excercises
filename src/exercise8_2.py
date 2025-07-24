@@ -4,6 +4,7 @@ import numpy as np
 from numba import njit, prange  # type: ignore noqa: PGH003
 from vispy import app, color, scene
 from vispy.scene.cameras import PanZoomCamera
+from vispy.scene.visuals import Image
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -148,7 +149,7 @@ def setup_scene(rgb_image: np.ndarray, canvas_size: tuple[int, int]) -> scene.Sc
     """
     canvas = scene.SceneCanvas(title="Mandelbrot Period Coloring", keys="interactive", size=canvas_size, show=True)
     view = canvas.central_widget.add_view()
-    scene.visuals.Image(rgb_image, parent=view.scene, method="subdivide")
+    Image(rgb_image, parent=view.scene, method="subdivide")
 
     camera = PanZoomCamera(aspect=1)
     view.camera = camera
